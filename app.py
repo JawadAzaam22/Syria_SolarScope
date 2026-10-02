@@ -73,7 +73,7 @@ with tab_calc:
     chart_df = pd.DataFrame({"Month": MONTHS, "Expected kWh": t["Expected"].values})
     st.altair_chart(alt.Chart(chart_df).mark_bar().encode(
         x=alt.X("Month:N", sort=MONTHS, title=None), y=alt.Y("Expected kWh:Q"),
-        tooltip=["Month", alt.Tooltip("Expected kWh:Q", format=",.0f")]), use_container_width=True)
+        tooltip=["Month", alt.Tooltip("Expected kWh:Q", format=",.0f")]), width="stretch")
     st.dataframe(t.round(1))
     daily = load_daily()
     twins = [g for grp in core.shared_cells(daily) if gov in grp for g in grp if g != gov]
@@ -92,7 +92,7 @@ with tab_analysis:
     st.altair_chart(base.mark_bar().encode(
         x=alt.X("mean:Q", title="Annual yield (kWh per kWp)"),
         tooltip=["governorate", alt.Tooltip("mean:Q", format=",.0f")])
-        + base.mark_rule().encode(x="low:Q", x2="high:Q"), use_container_width=True)
+        + base.mark_rule().encode(x="low:Q", x2="high:Q"), width="stretch")
     spread = (rank["mean"].max() / rank["mean"].min() - 1) * 100
     st.write(f"Best: **{rank.governorate.iloc[0]}** ({rank['mean'].iloc[0]:,.0f} kWh/kWp). "
              f"Lowest: **{rank.governorate.iloc[-1]}** ({rank['mean'].iloc[-1]:,.0f}). Spread: {spread:.1f}%.")
@@ -111,7 +111,7 @@ with tab_analysis:
             st.altair_chart(alt.Chart(sel).mark_line(point=True).encode(
                 x=alt.X("Month:N", sort=SHORT, title=None), y=alt.Y(f"{col}:Q", title=title),
                 color=alt.Color("governorate:N", title=None),
-                tooltip=["governorate", "Month", alt.Tooltip(f"{col}:Q", format=",.1f")]), use_container_width=True)
+                tooltip=["governorate", "Month", alt.Tooltip(f"{col}:Q", format=",.1f")]), width="stretch")
     peak = monthly.groupby("month")["heat_loss"].mean() * 100
     st.write(f"Across Syria heat loss peaks in **{MONTHS[peak.idxmax() - 1]}** ({peak.max():.1f}%) "
              f"and is lowest in **{MONTHS[peak.idxmin() - 1]}** ({peak.min():.1f}%).")
@@ -120,12 +120,12 @@ with tab_analysis:
     cv = annual.assign(cv_pct=annual.cv * 100).sort_values("cv_pct", ascending=False)
     st.altair_chart(alt.Chart(cv).mark_bar().encode(
         y=alt.Y("governorate:N", sort=None, title=None), x=alt.X("cv_pct:Q", title="Variability between years (CV, %)"),
-        tooltip=["governorate", alt.Tooltip("cv_pct:Q", format=".2f")]), use_container_width=True)
+        tooltip=["governorate", alt.Tooltip("cv_pct:Q", format=".2f")]), width="stretch")
     chg = core.period_change(daily).sort_values().rename("change").reset_index()
     st.altair_chart(alt.Chart(chg).mark_bar().encode(
         y=alt.Y("governorate:N", sort=None, title=None), x=alt.X("change:Q", title="Change in yearly yield, 2021-25 vs 2015-19 (%)"),
         color=alt.condition(alt.datum.change > 0, alt.value("#0f6b6b"), alt.value("#c0392b")),
-        tooltip=["governorate", alt.Tooltip("change:Q", format="+.2f")]), use_container_width=True)
+        tooltip=["governorate", alt.Tooltip("change:Q", format="+.2f")]), width="stretch")
     st.write(f"Yearly output varies by only {cv.cv_pct.min():.1f}-{cv.cv_pct.max():.1f}% between years; "
              f"the average change between the two periods is {chg.change.mean():+.2f}%.")
 
@@ -134,7 +134,7 @@ with tab_analysis:
     hot = core.hot_days(daily, limit / 100).sort_values(ascending=False).rename("days").reset_index()
     st.altair_chart(alt.Chart(hot).mark_bar().encode(
         y=alt.Y("governorate:N", sort=None, title=None), x=alt.X("days:Q", title=f"Days per year with more than {limit}% heat loss"),
-        tooltip=["governorate", alt.Tooltip("days:Q", format=".0f")]), use_container_width=True)
+        tooltip=["governorate", alt.Tooltip("days:Q", format=".0f")]), width="stretch")
     corr = daily[["ghi", "t_day", "t_cell", "heat_loss_day"]].corr().round(2)
     corr.index = corr.columns = ["Irradiance", "Air temp.", "Cell temp.", "Heat loss"]
     st.write("Correlation between daily variables:")
@@ -145,7 +145,7 @@ with tab_analysis:
 with tab_tariff:
     st.subheader("⚡ Official Syrian electricity tariffs (since 1 Nov 2025)")
     st.write("Four consumption tiers, billed every two months. The government still subsidises "
-             "about 60 % of tier-1 (the actual production cost is ~$0.14/kWh ≈ 1,600 SYP).")
+             "about 60 % of tier-1 (the actual production cost is ~$0.14/kWh).")
     st.dataframe(TARIFFS, hide_index=True)
     st.info("Reference: Ministry of Energy tiered pricing effective 1 Nov 2025 "
             "(reported by The National, 5 Nov 2025; Enab Baladi, 31 Oct 2025). "
@@ -154,7 +154,7 @@ with tab_tariff:
     ex_kwh = 5 * annual["mean"].mean()
     no_b, with_b = core.lcoe(5000, ex_kwh), core.lcoe(5000, ex_kwh, om_share=core.OM_SHARE)
     st.write(f"A 5 kW system with Syria's average sunshine (5,000 USD, no batteries) delivers solar power at roughly "
-             f"**${no_b:.3f}/kWh** - below the tier-2 grid price of ~${GRID:.3f}/kWh and close to the real "
+             f"**${no_b:.3f}/kWh** - below the tier-2 grid price of ~${GRID:.3f}/kWh and well below the real "
              f"production cost of the grid (~$0.14/kWh). With batteries the cost rises to about "
              f"**${with_b:.3f}/kWh** because of battery replacement.")
     st.caption("Note: grid supply is still rationed (about 8 hours/day in many areas), "
